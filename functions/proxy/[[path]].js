@@ -269,11 +269,15 @@ export async function onRequest(context) {
                  throw new Error(`HTTP error ${response.status}: ${response.statusText}. URL: ${targetUrl}. Body: ${errorBody.substring(0, 150)}`);
             }
 
-            // 读取响应内容为文本
-            const content = await response.text();
+            // 读取响应内容
             const contentType = response.headers.get('Content-Type') || '';
-            logDebug(`请求成功: ${targetUrl}, Content-Type: ${contentType}, 内容长度: ${content.length}`);
-            return { content, contentType, responseHeaders: response.headers }; // 同时返回原始响应头
+            // 判断是否为二进制内容（图片/音视频等）。二进制必须用 arrayBuffer 读取，
+            // 否则被当成 UTF-8 文本会损坏（典型表现为经代理转发的图片裂图）
+            const isBinary = /^(image\/|video\/|audio\/|application\/octet-stream|font\/)/i.test(contentType)
+                || MEDIA_FILE_EXTENSIONS.some(ext => targetUrl.toLowerCase().includes(ext));
+            const content = isBinary ? await response.arrayBuffer() : await response.text();
+            logDebug(`请求成功: ${targetUrl}, Content-Type: ${contentType}, 长度: ${(content && content.byteLength) || content.length}`);
+            return { content, contentType, isBinary, responseHeaders: response.headers }; // 同时返回原始响应头
 
         } catch (error) {
              logDebug(`请求彻底失败: ${targetUrl}: ${error.message}`);
@@ -539,10 +543,10 @@ export async function onRequest(context) {
         }
 
         // --- 实际请求 ---
-        const { content, contentType, responseHeaders } = await fetchContentWithType(targetUrl);
+        const { content, contentType, responseHeaders, isBinary } = await fetchContentWithType(targetUrl);
 
         // --- 写入缓存 (KV) ---
-        if (kvNamespace) {
+        if (kvNamespace && !isBinary) {
              try {
                  const headersToCache = {};
                  responseHeaders.forEach((value, key) => { headersToCache[key.toLowerCase()] = value; });
