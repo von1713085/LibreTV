@@ -26,9 +26,30 @@ const API_SITES = {
         api: 'https://www.example.com/api.php/provide/vod',
         name: '空内容测试源',
         adult: true
+    },
+    z360: {
+        api: 'https://360zy.com/api.php/provide/vod/at/json',
+        name: '360',
+        adult: false
+    },
+    hongniu: {
+        api: 'http://hongniuzy2.com/api.php/provide/vod/from/hnm3u8',
+        name: '红牛',
+        adult: false
+    },
+    liangzi: {
+        api: 'http://cj.lziapi.com/api.php/provide/vod/from/lzm3u8',
+        name: '量子',
+        adult: false
+    },
+    huohu: {
+        api: 'https://hhzyapi.com/api.php/provide/vod',
+        name: '火狐',
+        adult: false
     }
     //ARCHIVE https://telegra.ph/APIs-08-12
 };
+
 
 // 定义合并方法
 function extendAPISites(newSites) {
